@@ -4,34 +4,44 @@ export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
 
-    const systemPrompt = `You are the digital twin of ${profileData.name}, a professional ${profileData.title} based in ${profileData.location}.
-Your role is to answer questions about ${profileData.name}'s career, skills, and qualifications using the following information:
+    // RAG-lite: Analyze the user's latest message to determine which context to include
+    const latestUserMessage = messages.filter((m: any) => m.role === 'user').pop()?.content?.toLowerCase() || '';
+
+    const needsExperience = /(work|job|experience|career|resume|history)/.test(latestUserMessage);
+    const needsEducation = /(school|college|degree|education|university|study)/.test(latestUserMessage);
+    const needsCertifications = /(cert|certificate|credential|qualification)/.test(latestUserMessage);
+    const needsSkills = /(skill|tech|stack|language|framework|tool|know)/.test(latestUserMessage);
+
+    // Build the dynamic system prompt
+    let systemPrompt = `You are the digital twin of ${profileData.name}, a professional ${profileData.title} based in ${profileData.location}.
+Your role is to answer questions about ${profileData.name}'s career and qualifications using the provided information.
 
 Summary: ${profileData.summary}
-Skills: ${profileData.skills.join(', ')}
+Contact: ${profileData.contact.email} | ${profileData.contact.phone} | LinkedIn: ${profileData.contact.linkedin}
 
-Experience:
-${profileData.experience.map(exp => `- ${exp.title} at ${exp.company} (${exp.date}): ${exp.description}`).join('\n')}
+`;
 
-Certifications:
-${profileData.certifications.join('\n')}
+    if (needsSkills || (!needsExperience && !needsEducation && !needsCertifications)) {
+      systemPrompt += `Skills:\n${profileData.skills.join(', ')}\n\n`;
+    }
 
-Education:
-${profileData.education.map(edu => `- ${edu.degree} from ${edu.institution} (${edu.date})`).join('\n')}
+    if (needsExperience || (!needsSkills && !needsEducation && !needsCertifications)) {
+      systemPrompt += `Experience:\n${profileData.experience.map(exp => `- ${exp.title} at ${exp.company} (${exp.date}): ${exp.description}`).join('\n')}\n\n`;
+    }
 
-Honors:
-${profileData.honors.join('\n')}
+    if (needsEducation) {
+      systemPrompt += `Education & Honors:\n${profileData.education.map(edu => `- ${edu.degree} from ${edu.institution} (${edu.date})`).join('\n')}\n${profileData.honors.join('\n')}\n\n`;
+    }
 
-Contact:
-Email: ${profileData.contact.email}
-Phone: ${profileData.contact.phone}
-LinkedIn: ${profileData.contact.linkedin}
+    if (needsCertifications) {
+      systemPrompt += `Certifications:\n${profileData.certifications.join('\n')}\n\n`;
+    }
 
-Guidelines:
+    systemPrompt += `Guidelines:
 - Answer in the first person ("I am...", "My experience includes...") as if you are ${profileData.name}.
+- Use Markdown formatting for your responses (e.g., bullet points for lists, bold text for emphasis).
 - Be extremely conversational, friendly, and robust with general talk. If the user asks how you are, engage in polite small talk before steering back to professional topics.
 - Keep answers professional, confident, and concise. Do not hallucinate data.
-- Draw directly from the Experience descriptions for specific accomplishments when asked about work history.
 - If asked something not in the provided information, politely state that you are an AI assistant and don't have that specific detail, but encourage them to reach out directly via email or phone.`;
 
     const payloadMessages = [
@@ -59,7 +69,6 @@ Guidelines:
       });
     }
 
-    // Proxy the OpenRouter SSE stream directly to the client
     return new Response(response.body, {
       headers: {
         'Content-Type': 'text/event-stream',

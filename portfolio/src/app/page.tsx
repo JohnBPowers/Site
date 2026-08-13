@@ -1,11 +1,17 @@
+'use client';
+
 import Image from 'next/image';
+import { useState } from 'react';
 import { profileData } from '../data/profile';
 import styles from './page.module.css';
 import ChatWidget from '../components/ChatWidget';
 import Cursor from '../components/Cursor';
 import ScrollReveal from '../components/ScrollReveal';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 export default function Home() {
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
   return (
     <main>
       {/* Navbar */}
@@ -18,7 +24,28 @@ export default function Home() {
           <a href="#career" className={styles.navLink}>Career</a>
           <a href="#certifications" className={styles.navLink}>Certifications</a>
         </div>
+        {/* Hamburger for mobile */}
+        <button
+          className={styles.hamburger}
+          onClick={() => setMobileNavOpen(!mobileNavOpen)}
+          aria-label={mobileNavOpen ? 'Close navigation menu' : 'Open navigation menu'}
+          aria-expanded={mobileNavOpen}
+          aria-controls="mobile-nav"
+        >
+          <span className={`${styles.hamburgerLine} ${mobileNavOpen ? styles.hamburgerLineOpen1 : ''}`} />
+          <span className={`${styles.hamburgerLine} ${mobileNavOpen ? styles.hamburgerLineOpen2 : ''}`} />
+          <span className={`${styles.hamburgerLine} ${mobileNavOpen ? styles.hamburgerLineOpen3 : ''}`} />
+        </button>
       </nav>
+
+      {/* Mobile Nav Drawer */}
+      {mobileNavOpen && (
+        <div id="mobile-nav" className={styles.mobileNav} role="navigation" aria-label="Mobile Navigation">
+          <a href="#about" className={styles.mobileNavLink} onClick={() => setMobileNavOpen(false)}>About</a>
+          <a href="#career" className={styles.mobileNavLink} onClick={() => setMobileNavOpen(false)}>Career</a>
+          <a href="#certifications" className={styles.mobileNavLink} onClick={() => setMobileNavOpen(false)}>Certifications</a>
+        </div>
+      )}
 
       {/* Hero Section */}
       <section className={styles.hero}>
@@ -151,7 +178,9 @@ export default function Home() {
       </footer>
       
       {/* AI Digital Twin Chat Widget */}
-      <ChatWidget />
+      <ErrorBoundary fallback={<div className={styles.chatWidgetContainer} style={{bottom: '2rem', right: '2rem', padding: '1rem', background: 'var(--bg-secondary)', border: '1px solid #ff4444'}}>Chat module offline</div>}>
+        <ChatWidget />
+      </ErrorBoundary>
       
       {/* Custom Glowing Cursor */}
       <Cursor />
