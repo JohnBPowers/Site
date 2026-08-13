@@ -55,10 +55,21 @@
   top: 0;
   width: 50%;
   height: 100%;
-  background: var(--bg-secondary);
+  background-color: var(--bg-secondary);
+  background-image: 
+    linear-gradient(rgba(0, 240, 255, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.1) 1px, transparent 1px);
+  background-size: 30px 30px;
+  background-position: center center;
   clip-path: polygon(15% 0, 100% 0, 100% 100%, 0% 100%);
   z-index: -1;
   border-left: 2px solid var(--accent-cyan);
+  animation: gridMove 20s linear infinite;
+}
+
+@keyframes gridMove {
+  0% { background-position: 0 0; }
+  100% { background-position: 30px 30px; }
 }
 
 .heroGrid {
